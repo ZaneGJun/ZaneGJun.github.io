@@ -1,22 +1,94 @@
-<?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom">
-    <id>https://zanegjun.github.io</id>
-    <title>Gridea</title>
-    <updated>2020-02-03T12:05:54.537Z</updated>
-    <generator>https://github.com/jpmonette/feed</generator>
-    <link rel="alternate" href="https://zanegjun.github.io"/>
-    <link rel="self" href="https://zanegjun.github.io/atom.xml"/>
-    <subtitle>温故而知新</subtitle>
-    <logo>https://zanegjun.github.io/images/avatar.png</logo>
-    <icon>https://zanegjun.github.io/favicon.ico</icon>
-    <rights>All rights reserved 2020, Gridea</rights>
-    <entry>
-        <title type="html"><![CDATA[《全局光照技术》笔记-第一章]]></title>
-        <id>https://zanegjun.github.io/post/lesslessquan-ju-guang-zhao-ji-zhu-greatergreater-bi-ji-di-yi-zhang</id>
-        <link href="https://zanegjun.github.io/post/lesslessquan-ju-guang-zhao-ji-zhu-greatergreater-bi-ji-di-yi-zhang">
-        </link>
-        <updated>2020-02-03T12:04:10.000Z</updated>
-        <content type="html"><![CDATA[<h2 id="11全局光照总览">1.1全局光照总览</h2>
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>《全局光照技术》笔记-第一章 | Gridea</title>
+<meta name="description" content="温故而知新">
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<link rel="shortcut icon" href="https://zanegjun.github.io/favicon.ico?v=1580731550838">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="stylesheet" href="https://unpkg.com/papercss@1.6.1/dist/paper.min.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+<link rel="stylesheet" href="https://zanegjun.github.io/styles/main.css">
+
+
+<script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+
+
+  </head>
+  <body>
+  
+    <nav class="navbar border fixed split-nav">
+  <div class="nav-brand">
+    <h3><a href="https://zanegjun.github.io">Gridea</a></h3>
+  </div>
+  <div class="collapsible">
+    <input id="collapsible1" type="checkbox" name="collapsible1">
+    <button>
+      <label for="collapsible1">
+        <div class="bar1"></div>
+        <div class="bar2"></div>
+        <div class="bar3"></div>
+      </label>
+    </button>
+    <div class="collapsible-body">
+      <ul class="inline">
+        
+          <li>
+            
+              <a href="/" class="menu">
+                首页
+              </a>
+            
+          </li>
+        
+          <li>
+            
+              <a href="/archives" class="menu">
+                归档
+              </a>
+            
+          </li>
+        
+          <li>
+            
+              <a href="/tags" class="menu">
+                标签
+              </a>
+            
+          </li>
+        
+          <li>
+            
+              <a href="/post/about" class="menu">
+                关于
+              </a>
+            
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div id="top" class="row site">
+      <div class="sm-12 md-8 col">
+        <div class="paper">
+          <article class="article">
+            <h1>《全局光照技术》笔记-第一章</h1>
+            <p class="article-meta">
+              2020-02-03
+              
+            </p>
+            
+            <div class="post-content">
+              <h2 id="11全局光照总览">1.1全局光照总览</h2>
 <p>  主要介绍了全局光包含的几个大的方面，形成总体的认识。包括了以下几个方面。</p>
 <ol>
 <li>阴影。包括软阴影、硬阴影，应该是ShadowMap</li>
@@ -93,6 +165,84 @@
 <li><strong>FSAA(全屏反走样)</strong> 以高分辨率渲染，然后对于相邻采样点取平均值得到最终图像。优点是实现简单，缺点是计算量大，每个子采样点都需要被进行一次着色。</li>
 <li><strong>MSAA(多重采样反走样)</strong> 对于每个像素生成多个子采样点，并计算每个子采样点的深度和模板值，而对于颜色值，光栅化器对每个像素只调用一次像素着色器，然后将计算结果复制给每个子采样点。<mark>由于像素着色器只计算一次，相对FSAA大大减少了计算量，但是内存占用并没有减少。</mark> 纹理采样的位置一般是使用像素中心点位置，但是在MSAA下,几何图形可能只占据像素的小部分区域并不包括中心点,这时候再使用中心点采样纹理是不正确的；为了确保颜色采样的正确性,这个像素着色器使用的采样位置可以被调整到覆盖区域中某个点的位置，这种技术称为<strong>质心采样</strong>。<mark>对于一个被几何图形覆盖的像素点，它首先从像素中心点开始寻找，如果中心点没有被几何图形覆盖，则一次向外延伸直到找到一个被覆盖的子采样点，该点的位置将作为最终像素着色器对纹理采样的位置。</mark></li>
 </ul>
-]]></content>
-    </entry>
-</feed>
+
+            </div>
+          </article>
+        </div>
+        <div class="paper" data-aos="fade-in">
+          
+        </div>
+        
+      </div>
+
+      <div class="sm-12 md-4 col sidebar">
+  <div class="paper info-container">
+    <img src="https://zanegjun.github.io/images/avatar.png?v=1580731550838" class="no-responsive avatar">
+    <div class="text-muted">温故而知新</div>
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+  </div>
+  <div class="paper">
+    <div class="sidebar-title">
+      最新文章
+    </div>
+    <div class="row">
+      <ul>
+        
+          
+            <li>
+              <a href="https://zanegjun.github.io/post/lesslessquan-ju-guang-zhao-ji-zhu-greatergreater-bi-ji-di-yi-zhang">《全局光照技术》笔记-第一章</a>
+            </li>
+          
+        
+          
+            <li>
+              <a href="https://zanegjun.github.io/post/about">关于</a>
+            </li>
+          
+        
+      </ul>
+    </div>
+  </div>
+  <div class="paper">
+    <div class="sidebar-title">
+      标签列表
+    </div>
+    <div class="row">
+      
+    </div>
+  </div>
+  <div class="paper">
+    Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | <a class="rss" href="https://zanegjun.github.io/atom.xml" target="_blank">RSS</a>
+  </div>
+</div>
+
+
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+
+<script type="application/javascript">
+
+AOS.init();
+
+hljs.initHighlightingOnLoad()
+
+</script>
+
+
+
+
+  </body>
+</html>
