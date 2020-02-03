@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://zanegjun.github.io</id>
     <title>ZaneGJun Blob</title>
-    <updated>2020-02-03T12:45:50.526Z</updated>
+    <updated>2020-02-03T12:50:01.841Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://zanegjun.github.io"/>
     <link rel="self" href="https://zanegjun.github.io/atom.xml"/>
@@ -114,8 +114,7 @@
 <li>光与表面的交互过程可以被以下描述：</li>
 </ol>
 <pre><code>graph LR
-光源--&gt;与物体进行交互,部分被反射,部分被吸收并经过一定路径传播后沿其他方向从物体表面散射
-与物体进行交互,部分被反射,部分被吸收并经过一定路径传播后沿其他方向从物体表面散射--&gt;被感应器接收形成图像
+光源--&gt;与物体进行交互,部分被反射,部分被吸收并经过一定路径传播后沿其他方向从物体表面散射--&gt;被感应器接收形成图像
 </code></pre>
 <ol start="3">
 <li>光源可以简单分为平行光，点光源，聚光灯</li>
