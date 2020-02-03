@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>《全局光照技术》笔记-第一章之PBR | ZaneGJun Blob</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://zanegjun.github.io/favicon.ico?v=1580732195074">
+<link rel="stylesheet" href="https://zanegjun.github.io/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="物理上正确，主要是指光在场景中的传输保持能量守恒
+双向反射分布函数(BRDF)
+  表示反射方向上的辐射亮度增量与入射方向辐射照度增量的比率。直观上讲，BRDF的值表示入射光方向单位立体角的能量在反射方向上反射的比率。它本质上指明了每个方向..." />
+    <meta name="keywords" content="笔记" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://zanegjun.github.io">
+        <img src="https://zanegjun.github.io/images/avatar.png?v=1580732195074" class="site-logo">
+        <h1 class="site-title">ZaneGJun Blob</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      记录文字
+    </div>
+    <div class="site-footer">
+      Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | <a class="rss" href="https://zanegjun.github.io/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">《全局光照技术》笔记-第一章之PBR</h2>
+            <div class="post-date">2020-02-03</div>
+            
+            <div class="post-content" v-pre>
+              <h4 id="物理上正确主要是指光在场景中的传输保持能量守恒"><mark><strong>物理上正确，主要是指光在场景中的传输保持能量守恒</strong></mark></h4>
+<h2 id="双向反射分布函数brdf">双向反射分布函数(BRDF)</h2>
+<p>  表示反射方向上的辐射亮度增量与入射方向辐射照度增量的比率。直观上讲，BRDF的值表示入射光方向单位立体角的能量在反射方向上反射的比率。它本质上指明了每个方向的入射光在各个方向上的反射光分布。</p>
+<h3 id="菲涅尔公式">菲涅尔公式</h3>
+<p>  <mark>当光由一种介质进入另一种不同的介质，在光滑表面发生反射和折射时，入射光被反射和折射的比率分别是多少，这就是菲涅尔方程描述的问题。</mark> 菲涅尔公式仅取决于入射角以及两种介质的折射系数。因为原始菲涅尔公式非常复杂，在渲染领域我们通常使用Schlick提出的一种比较简单且相对比较精确的模型。<br>
+使用这个模型，只取决于入射光垂直于表面时的菲涅尔反射率的值，这个值我们可以在现实生活中找到大量物质的对应值，此外也可以通过材质的折射率得出。</p>
+<h3 id="微面元理论微平面理论">微面元理论(微平面理论)</h3>
+<p>  我们看到的绝大部分物质在一个像素的观察尺度上都不是绝对光滑的，这个尺度为微观尺度。在微观尺度下，一个像素接收到来自某个方向的光照并不是一单束光，由于一个像素的尺寸远远大于光子的尺寸，因此入射光实际上是很多束光，这些光与微观上具有不同方向法线的微面元交互，从而反射或者折射至不同的方向。<mark><strong>由于这种微观结构不能通过分析的方式精确模拟，因此只能通过统计的方式来模拟这种微观结构的分布</strong></mark><br>
+  <strong>只有那些满足反射方向刚好在观察方向v的面元才能被看到，意味着这些可以被观察的面元的法线正好位于入射方向I和观察方向v的中间，这个矢量称为<mark>半矢量(half vector)</mark> h = (l+v)/|l+v|</strong>。<br>
+  基于微面元的假设和理论，基于微面元理论的BRDF模型主要有这两部分因素决定:</p>
+<ul>
+<li>一个关于所欲微观面元的表面法线分布函数D，<mark>其中只有法线指向半矢量h方向的面元才会被观察到</mark>。</li>
+<li>对法线方向处于半矢量h的微观面元，<mark>当且仅当他们在入射方向和观察方向没有被其他面元阻挡才能被观察到</mark>，因此需要一个表示几何遮挡关系的函数G。</li>
+<li>再结合菲涅尔公式F</li>
+</ul>
+<h3 id="微观面元法线分布函数d">微观面元法线分布函数D</h3>
+<p>  BRDF最重要的部分就是微观面元的法线分布函数NDF，它是表面的微观几何结构中，所有微观面的法线面向不同方向的概率，决定了光泽部分的宽度、形状以及其他特征。<strong>根据微观面理论的假设，这个法线分布函数是由表面的粗糙度决定的。</strong> 关于光泽BRDF球状分布，<mark>它具有一个很长的拖尾</mark>，这个拖尾比一般的光泽模型要长好几倍，传统的Blinn Phong和Gaussian分布都不能有效第表达这种拖尾效应。<br>
+  Disney发现只有GGX分布具有最长的拖尾，一些研究表明单一的光泽叶分布通常不能精确地描述真实物质的光泽属性，建议使用多个光泽叶，Disney叶采用了两个GGX的组合俩表述这种更长的拖尾。<br>
+  对于粗糙度，Disney选择使用 a = roughness平方 以产生一个更线性的变化，这使得设计师能够更直观地调整效果。</p>
+<h3 id="微观面元集合遮挡函数g">微观面元集合遮挡函数G</h3>
+<p>  G称为双向阴影遮挡函数，<mark>描述的是那些具有半矢量法线的微观面元中，有多少比例是同时被入射方向和反射方向看见的(或者说没有被阻挡的)。</mark></p>
+<h3 id="漫反射brdf">漫反射BRDF</h3>
+<p>  出于性能考虑，工业中比较流行的方案是朗伯BRDF(Lambert BRDF)，即光从各个方向以相同的亮度反射。Lambert漫反射模型假设折射进入表面内部的光经历了足够多的散射，因此失去了方向性，从而在各个方向的反射率为一个常数。</p>
+<h2 id="材质模型">材质模型</h2>
+<p>  在UE4中主要有4个参数和PBR材质相关，其他引擎例如Unity也差不多,分别是</p>
+<ul>
+<li>Base Color</li>
+<li>Roughness</li>
+<li>Metallic</li>
+<li>Specular</li>
+</ul>
+<h4 id="base-color">Base Color</h4>
+<p>  BaseColor，或者更一般说法是Diffuse，代表物体表面的真实颜色。<br>
+  <mark><strong>任务物体在没有光照的时候都是看不见的，可以说一个物体本身是不具备任何“颜色”的(自发光物体除外),着色的过程是将光照射到物体表面，从而计算物体表面呈现的颜色的过程。</strong></mark><br>
+  光与物体表面交互分为两种方式:<strong>(Specular)光泽反射和(Diffuse)漫反射(这里仅讨论绝缘体)。</strong><br>
+  <mark><strong>对于光泽反射,它的反射率的RGB分量是一样的,即它不会改变入射光的颜色，仅改变其亮度。因此光泽反映的是光源本身，例如一个白色点光源在物体表面光泽部分看到的仍然是一个白色的(亮度被菲涅尔反射率缩放)小圆点形状，使用环境贴图作为光源则会在物体表面“印上”周围的环境。所以光泽反射几乎与物体表面的真实颜色无关。</strong></mark><br>
+  <mark><strong>对于漫反射，它指的是光折射进物体内部，在物体内部经历一定的散射后重新从表面散射回原来的介质。由于散射的光失去了方向性，所以我们用一个固定的反射率常数来表示这个BRDF反射率，即baseColor。所以我们所说的物体表面的“真实颜色”,其实是一个反射率，它表示当其他光照在表面进行漫反射是，在每个方向的反射率是多少，如果我们使用白色光源照亮物体表面，则物体呈现baseColor的颜色，使用其他颜色的光源则呈现其他不同的颜色(由光源颜色与baseColor的乘积决定),所以baseColor反应的就是物体在白色光照下表面的真实颜色。</strong></mark></p>
+<h4 id="roughness">Roughness</h4>
+<p>  <mark>控制材质的粗糙度，越粗糙的表面，入射光越向更多的方向反射(菲涅尔反射率越低，更多光被吸收形成漫反射)，物体的表面越来越接近BaseColor的颜色；反之，光泽部分越来越窄，物体表面越来越光滑，高亮度的光泽使得物体表面越来越多地反射着周围的环境(或者光源的形状)。</mark> 当Roughness为0时表示物体表面绝对光滑，成镜面反射，如果光源为点光源，镜面反射使得物体表面能够清楚看到点光源的形状及颜色，如果光源为环境贴图，则光滑物体表面能够清晰地反映出周围环境；当Roughness为1时，物体表面完全漫反射，呈现BaseColor颜色。</p>
+<h4 id="metallic">Metallic</h4>
+<p>  控制表面的“金属感”，金属和非金属是一个非此即彼的概念，非金属的Metiallic值为0，而对于金属表面的Metallic值为1.对于纯净的物质，例如纯净的金属，石头，塑料凳，这些材质的Metallic值要么为0，有么为1。但是另外一些混合物质，如腐蚀的物体或者布满灰尘或生锈的金属，这些材质的Metallic可能需要介于0到1之间，对于这些介于0和1之间的材质，UE通过层级纹理实现两种材质之间的混合。<mark>材质可以分为金属和非金属，而金属对于折射进表面内部的光全部吸收，从而使金属材质将不会有光从表面内部再散射回来，<strong>因此金属材质没有漫反射部分。</strong></mark> 所以在Disney的BRDF模型中，他们对金属材质去掉漫反射部分，并使用BaseColor的值作为光泽的入射光进行计算。由于这种特殊的计算方式，Metallic属性没有一个线性的计算公式，因此大部分解决方案都是使用混合的方式实现0和1之外的插值。</p>
+<h4 id="specular">Specular</h4>
+<p>  Specular表示入射光被反射的量，或者说反射率。需要注意的是，对于非金属而言，他们的反射率往往与波长无关，即他们RGB的分量相同，因此他们对于光泽的反射，仅影响入射光的亮度，而通常不会影响其颜色。但是金属的反射率通常和波长是相关的，它对于入射光不同的颜色分量具有不同的反射率。</p>
+<h2 id="双向散射分布函数">双向散射分布函数</h2>
+<p>  BRDF通过少量几个参数就能够表述比较广泛的材质，单身对于折射，次表面散射需要用特别的方法处理。这些方法通常不能保证能量守恒，因此当整个渲染器是基于光线追踪计数计算光照时，这种能量的不守恒将被放大导致真个图像品质失真。<br>
+  <mark>更为一般的双向散射分布函数(BSDF),它其实是BRDF和BTDF的总和。</mark> <strong>BTDF全称为双向折射分布函数</strong>，它和BRDF的形式基本一样，唯一的区别是BTDF的观察方向是在折射方向范围内。<br>
+  <mark>这样，BSDF表示，给定某点的入射方向和出射方向，出射方向上辐射亮度增量和入射方向辐射照度增量的比率。</mark></p>
+<h4 id="双向折射分布函数btdf">双向折射分布函数(BTDF)</h4>
+<p>  工业中比较流行的模型是Bruce Walter提出的模型。这个模型同样基于微平面理论，即宏观表面有多个微观面元组成，每个面元绝对光滑，<strong><mark>光的折射遵循折射定理</mark></strong>。折射定理不仅描述光在折射时的弯曲现象，它也间接地约束了光在折射方向发散的范围。</p>
+<h4 id="次表面散射">次表面散射</h4>
+<p>  传统的BRDF模型并不包括对次表面散射的计算，即光从一个点进入表面内部，经过一定散射之后从另一个点散射回原介质。但是也包含了一般的漫反射之外的一些特性，主要是回射反射效果。Disney将原有的漫反射公式拆分为两部分：一部分是与微观结构有关的具有方向性的效果(回射反射),另一部分是与方向无关的一般的漫反射效果。这样当材质次表面散射的入射点和出射点距离小于一个像素尺寸是，还是使用原来的模型，当大于一个像素尺寸是，则使用新的BSSRDF模型替换与方向无关的部分漫反射。</p>
+<h4 id="超薄表面的渲染">超薄表面的渲染</h4>
+<p>  对于超薄表面，Disney假设他散射的入射点和出射点位于同一点，和固体物体一样，仍然使用specTrans参数在完全漫反射和完全光泽(包括反射和折射)之间混合。</p>
+<h2 id="渲染方程">渲染方程</h2>
+<pre><code class="language-math">光从x向方向w_o发射的辐射亮度 = 光源或者自发光在x处沿w_o的辐射亮度 + x处沿w_o防线的来自反射/折射的辐射亮度
+</code></pre>
+<p>通常反射/折射的辐射亮度需要对点x法线方向的半空间进行积分。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://zanegjun.github.io/tag/6uwbRBXgb" class="tag">
+                    笔记
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://zanegjun.github.io/post/lesslessquan-ju-guang-zhao-ji-zhu-greatergreater-bi-ji-di-yi-zhang">
+                  <h3 class="post-title">
+                    《全局光照技术》笔记-第一章
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+
+
+
+
+  </body>
+</html>
