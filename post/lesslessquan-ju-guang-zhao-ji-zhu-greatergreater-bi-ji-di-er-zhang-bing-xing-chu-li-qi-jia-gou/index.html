@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>《全局光照技术》笔记第二章-并行处理器架构 | ZaneGJun Blob</title>
+<meta name="keywords" content="Gridea静态个人博客">
+<meta name="description" content="记录文字">
+<link rel="shortcut icon" href="https://zanegjun.github.io/favicon.ico?v=1580818532050">
+<link rel="stylesheet" href="https://zanegjun.github.io/styles/main.css">
+
+<link rel="stylesheet" href="/media/css/mist.css">
+
+<link rel="stylesheet" href="/media/fonts/font-awesome.css">
+<link href="//fonts.googleapis.com/css?family=Monda:300,300italic,400,400italic,700,700italic|Roboto Slab:300,300italic,400,400italic,700,700italic|Rosario:300,300italic,400,400italic,700,700italic|PT Mono:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+
+<link href="/media/hljs/styles/xcode.css" rel="stylesheet">  
+<script src="/media/hljs/highlight.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.0/velocity.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.0/velocity.ui.min.js"></script>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.css" integrity="sha384-zB1R0rpPzHqg7Kpt0Aljp8JPLqbXI3bhnPWROx27a9N0Ll6ZP/+DiW/UqRcLbRjq" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.js" integrity="sha384-y23I5Q6l+B6vatafAwxRu/0oK/79VlbSz7Q9aiSZUvyWYIYsd+qj+o24G5ZU2zJz" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/contrib/auto-render.min.js" integrity="sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI" crossorigin="anonymous"
+    onload="renderMathInElement(document.body);"></script>
+    <meta name="description" content="《全局光照技术》笔记第二章-并行处理器架构" />
+    <meta name="keywords" content="笔记" />
+  </head>
+  <body>
+    <div class="head-top-line"></div>
+    <div class="header-box">
+      
+<div class=" mist">
+  <header class="header bg-color ">
+    <div class="blog-header box-shadow-wrapper  " id="header">
+      <div class="nav-toggle" id="nav_toggle">
+        <div class="toggle-box">
+          <div class="line line-top"></div>
+          <div class="line line-center"></div>
+          <div class="line line-bottom"></div>
+        </div>
+      </div>
+      <div class="site-meta">       
+        <div class="site-title">
+          
+            <a href="/" class="">
+              <span class="logo-line-before">
+                <i class=""></i>
+              </span>
+              <span class="main-title">ZaneGJun Blob</span>
+              <span class="logo-line-after">
+                <i class=""></i>
+              </span>
+            </a>  
+          
+        </div>
+        
+      </div>
+      <nav class="site-nav" id="site_nav">
+        <ul id="nav_ul">
+          
+            <li class="nav-item ">
+              
+                <a href="/">
+                  <i class="fa fa-home"></i> 首页
+                </a>
+              
+            </li>
+          
+            <li class="nav-item ">
+              
+                <a href="/archives">
+                  <i class="fa fa-archive"></i> 归档
+                </a>
+              
+            </li>
+          
+            <li class="nav-item ">
+              
+                <a href="/tags">
+                  <i class="fa fa-tags"></i> 标签
+                </a>
+              
+            </li>
+          
+            <li class="nav-item ">
+              
+                <a href="/post/about">
+                  <i class="fa fa-user"></i> 关于
+                </a>
+              
+            </li>
+          
+          <li class="nav-item">
+            <a>
+              <i class="fa fa-search"></i> 搜索
+            </a>
+          </li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+</div>
+
+<script type="text/javascript"> 
+ 
+  let showNav = true;
+
+  let navToggle = document.querySelector('#nav_toggle'),
+  siteNav = document.querySelector('#site_nav');
+  
+  function navClick() {
+    let sideBar = document.querySelector('.sidebar');
+    let navUl = document.querySelector('#nav_ul');
+    navToggle.classList.toggle('nav-toggle-active');
+    siteNav.classList.toggle('nav-menu-active');
+    if (siteNav.classList.contains('nav-menu-active')) {
+      siteNav.style = "height: " + (navUl.children.length * 42) +"px !important";
+    } else {
+      siteNav.style = "";
+    }
+  }
+
+  navToggle.addEventListener('click',navClick);  
+</script>
+    </div>
+    <div class="main-continer">
+      
+      <div class="section-layout mist bg-color">
+        <div class="section-layout-wrapper">
+          
+
+<div class="sidebar">
+    <div class="sidebar-box box-shadow-wrapper  right-motion" id="sidebar">
+      
+        <div class="post-list-sidebar">
+          <div class="sidebar-title">
+            <span id="tocSideBar" class="sidebar-title-item sidebar-title-active">文章目录</span>
+            <span id="metaSideBar" class="sidebar-title-item">站点概览</span>
+          </div>
+        </div>
+      
+      <div class="sidebar-body mist" id="sidebar_body">
+        
+          <div class="post-side-meta" id="post_side_meta">
+            
+<div class="sidebar-wrapper box-shadow-wrapper ">
+  <div class="sidebar-item">
+    <img class="site-author-image right-motion" src="https://zanegjun.github.io/images/avatar.png"/>
+    <p class="site-author-name">ZaneGJun Blob</p>
+    <p class="site-description right-motion">记录文字</p>
+  </div>
+  <div class="sidebar-item side-item-stat right-motion">
+    <div class="sidebar-item-box">
+      <a href="/archives/">
+        
+        <span class="site-item-stat-count">3</span>
+        <span class="site-item-stat-name">文章</span>
+      </a>
+    </div>
+    <div class="sidebar-item-box">
+      <a href="">
+        <span class="site-item-stat-count">1</span>
+        <span class="site-item-stat-name">分类</span>
+      </a>
+    </div>
+    <div class="sidebar-item-box">
+      <a href="/tags/">
+        <span class="site-item-stat-count">1</span>
+        <span class="site-item-stat-name">标签</span>
+      </a>
+    </div>
+  </div>
+  
+  
+
+
+</div>
+          </div>
+          <div class="post-toc sidebar-body-active" id="post_toc" style="opacity: 1;">
+            <div class="toc-box right-motion">
+  <div class="toc-wrapper auto-number auto" id="toc_wrapper">
+    <ul class="markdownIt-TOC">
+<li><a href="#cpu">CPU</a>
+<ul>
+<li><a href="#21cpu%E5%BA%94%E7%94%A8%E7%A8%8B%E5%BA%8F%E6%89%A7%E8%A1%8C%E6%A8%A1%E5%9E%8B">2.1CPU应用程序执行模型</a>
+<ul>
+<li><a href="#211%E7%BC%93%E5%AD%98">2.1.1缓存</a></li>
+<li><a href="#212%E9%A2%84%E5%8F%96">2.1.2预取</a></li>
+<li><a href="#22%E5%B9%B6%E8%A1%8C%E8%AE%A1%E7%AE%97%E6%9E%B6%E6%9E%84">2.2并行计算架构</a>
+<ul>
+<li><a href="#221%E6%8C%87%E4%BB%A4%E7%BA%A7%E5%B9%B6%E8%A1%8C">2.2.1指令级并行</a>
+<ul>
+<li><a href="#2211%E6%8C%87%E4%BB%A4%E7%AE%A1%E7%BA%BF%E5%8C%96">2.2.1.1指令管线化</a></li>
+</ul>
+</li>
+<li><a href="#222%E7%BA%BF%E7%A8%8B%E7%BA%A7%E5%B9%B6%E8%A1%8C">2.2.2线程级并行</a>
+<ul>
+<li><a href="#2221%E5%90%8C%E6%97%B6%E5%A4%9A%E7%BA%BF%E7%A8%8B%E6%8A%80%E6%9C%AF">2.2.2.1同时多线程技术</a></li>
+</ul>
+</li>
+<li><a href="#223%E5%A4%84%E7%90%86%E5%99%A8%E7%BA%A7%E5%B9%B6%E8%A1%8C">2.2.3处理器级并行</a>
+<ul>
+<li><a href="#2231%E5%A4%9A%E6%A0%B8%E5%A4%84%E7%90%86%E5%99%A8%E6%9E%B6%E6%9E%84%E7%9A%84%E5%AF%B9%E7%AD%89%E6%80%A7">2.2.3.1多核处理器架构的对等性</a></li>
+<li><a href="#2232%E5%A4%9A%E5%A4%84%E7%90%86%E5%99%A8%E6%9E%B6%E6%9E%84%E7%9A%84%E9%80%9A%E4%BF%A1%E6%96%B9%E5%BC%8F">2.2.3.2多处理器架构的通信方式</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#gpu">GPU</a>
+<ul>
+<li><a href="#231%E4%B8%BA%E4%BB%80%E4%B9%88%E9%9C%80%E8%A6%81%E4%B8%80%E4%B8%AA%E5%B9%B6%E8%A1%8C%E8%AE%A1%E7%AE%97%E6%9E%B6%E6%9E%84">2.3.1为什么需要一个并行计算架构</a></li>
+<li><a href="#232%E5%86%85%E5%AD%98%E7%BB%93%E6%9E%84">2.3.2内存结构</a>
+<ul>
+<li><a href="#2321%E5%85%A8%E5%B1%80%E5%86%85%E5%AD%98">2.3.2.1全局内存</a></li>
+<li><a href="#2322%E5%B8%B8%E9%87%8F%E7%BA%B9%E7%90%86%E5%86%85%E5%AD%98">2.3.2.2常量/纹理内存</a></li>
+<li><a href="#2323%E5%85%B1%E4%BA%AB%E7%BC%93%E5%AD%98">2.3.2.3共享缓存</a></li>
+<li><a href="#2324%E5%AF%84%E5%AD%98%E5%99%A8">2.3.2.4寄存器</a></li>
+</ul>
+</li>
+<li><a href="#234%E5%BB%B6%E8%BF%9F%E9%9A%90%E8%97%8F">2.3.4延迟隐藏</a></li>
+<li><a href="#235%E5%85%A8%E5%B1%80%E5%86%85%E5%AD%98%E8%AE%BF%E9%97%AE%E7%9A%84%E5%90%88%E5%B9%B6">2.3.5全局内存访问的合并</a>
+<ul>
+<li><a href="#2351%E5%88%86%E6%94%AF">2.3.5.1分支</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  </div>
+</div>
+
+<script>
+
+let lastTop = 0, lList = [], hList = [], postBody, lastIndex = -1; 
+let active = 'active-show', activeClass = 'active-current';
+let tocWrapper = document.querySelector('#toc_wrapper');
+let tocContent = tocWrapper.children[0];
+let autoNumber = tocWrapper&&tocWrapper.classList.contains('auto-number');
+
+function addTocNumber(elem, deep) {
+  if (!elem) {
+    return;
+  }
+  let prop = elem.__proto__;
+
+  if (prop === HTMLUListElement.prototype) {
+    for (let i = 0; i < elem.children.length; i++) {
+      addTocNumber(elem.children[i], deep + (i + 1) + '.');
+    }
+  } else if (prop === HTMLLIElement.prototype) {
+    // 保存li元素
+    lList.push(elem);
+    for (let i = 0; i < elem.children.length; i++) {
+      let cur = elem.children[i];
+      if (cur.__proto__ === HTMLAnchorElement.prototype) {
+        if (autoNumber) {
+          cur.text =  deep + ' ' + cur.text;
+        }
+      } else if (cur.__proto__ === HTMLUListElement.prototype) {
+        addTocNumber(cur, deep);
+      }
+    }
+  }
+}
+
+
+document.addEventListener('scroll', function(e) {
+  if (lList.length <= 0) {
+    return;
+  }
+  let scrollTop = document.scrollingElement.scrollTop;
+  let dir;
+
+  if (lastTop - scrollTop > 0) {
+    dir = 'up';
+  } else {
+    dir = 'down';
+  }
+
+  lastTop = scrollTop;
+  if (scrollTop <= 0) {
+    if (lastIndex >= 0 && lastIndex < hList.length) {
+      lList[lastIndex].classList.remove(activeClass);
+    }
+    return;
+  }
+
+  let current = 0, hasFind = false;
+  for (let i = 0; i < hList.length; i++) {
+    if (hList[i].offsetTop > scrollTop) {
+      current = i;
+      hasFind = true;
+      break;
+    }
+  }
+  if (!hasFind && scrollTop > lList[lList.length - 1].offsetTop) {
+    current = hList.length - 1;
+  } else {
+    current--;
+  }
+  if (dir === 'down') {
+    if (current > lastIndex) {
+      addActiveClass(current);
+      removeActiveClass(lastIndex) 
+      lastIndex = current;
+      removeParentActiveClass();
+      lList[current] && addActiveLiElemment(lList[current].parentElement,tocContent);
+    }
+  } else {
+    if (current < lastIndex) {
+      addActiveClass(current);
+      removeActiveClass(lastIndex);
+      lastIndex = current;
+      removeParentActiveClass();
+      lList[current] && addActiveLiElemment(lList[current].parentElement,tocContent);
+    }
+  }
+});
+
+function removeParentActiveClass() {
+  let parents = tocContent.querySelectorAll('.'+active)
+  parents.forEach(function(elem) {
+    elem.classList.remove(active);
+  });
+}
+
+function addActiveClass(index) {
+  if (index >= 0 && index < hList.length) {
+    lList[index].classList.add(activeClass);
+  }
+}
+
+function removeActiveClass(index) {
+  if (index >= 0 && index < hList.length) {
+    lList[index].classList.remove(activeClass);
+  }
+}
+
+function addActiveLiElemment(elem, parent) {
+  if (!elem || elem === parent) {
+    return;
+  } else {
+    if (elem.__proto__ === HTMLLIElement.prototype) {
+      elem.classList.add(active);
+    }
+    addActiveLiElemment(elem.parentElement, parent);
+  }
+}
+
+function showToc() {
+  if (tocWrapper) {
+    postBody = document.querySelector('#post_body');
+    for (let i = 0; i < postBody.children.length; i++) {
+      if (postBody.children[i].__proto__ === HTMLHeadingElement.prototype) {
+        hList.push(postBody.children[i]);
+      }
+    }
+    if (tocWrapper.classList.contains('compress')) {
+        tocContent.classList.add('closed');
+    } else if (tocWrapper.classList.contains('no_compress')){
+      tocContent.classList.add('expanded');
+    } else {
+      if (hList.length > 10) {
+        active = 'active-hidden'
+        tocContent.classList.add('closed');
+      } else {
+        tocContent.classList.add('expanded');
+      }
+    }
+  }
+}
+addTocNumber(tocContent, '');
+
+window.addEventListener('load', function() {
+  showToc();
+  document.querySelector('#sidebar').style='display: block;';
+  tocWrapper.classList.add('toc-active');
+  setTimeout(function() {
+    if ("createEvent" in document) {
+      let evt = document.createEvent("HTMLEvents");
+      evt.initEvent("scroll", false, true);
+      document.dispatchEvent(evt);
+    }
+    else {
+      document.fireEvent("scroll");
+    }
+  }, 500)
+})
+
+</script>
+          </div>
+        
+      </div>
+    </div>
+</div>
+<script>
+  const SIDEBAR_TITLE_ACTIVE = 'sidebar-title-active';
+  const SIDEBAR_BODY_ACTIVE = 'sidebar-body-active';
+  const SLIDE_UP_IN = 'slide-up-in';
+
+  let sidebar = document.querySelector('#sidebar'),
+  tocSideBar = document.querySelector('#tocSideBar'),
+  metaSideBar = document.querySelector('#metaSideBar'),
+  postToc = document.querySelector('#post_toc'),
+  postSiteMeta = document.querySelector('#post_side_meta'),
+  sidebarTitle = document.querySelector('.sidebar-title'),
+  sidebarBody = document.querySelector('#sidebar_body');
+
+  tocSideBar && tocSideBar.addEventListener('click', (e) => {
+    toggleSidebar(e);
+  });
+
+  metaSideBar && metaSideBar.addEventListener('click', (e) => {
+    toggleSidebar(e);
+  });
+
+  function toggleSidebar(e) {
+    let currentTitle = document.querySelector("."+SIDEBAR_TITLE_ACTIVE);
+    if (currentTitle == e.srcElement) {
+      return ;
+    }
+    let current, showElement, hideElement;
+    if (e.srcElement == metaSideBar) {
+      showElement = postSiteMeta;
+      hideElement = postToc;
+    } else if (e.srcElement == tocSideBar){
+      showElement = postToc;
+      hideElement = postSiteMeta;
+    }
+    currentTitle.classList.remove(SIDEBAR_TITLE_ACTIVE);
+    e.srcElement.classList.add(SIDEBAR_TITLE_ACTIVE);
+
+    window.Velocity(hideElement, 'stop');
+    window.Velocity(hideElement, 'transition.slideUpOut', {
+      display: 'none',
+      duration: 200,
+      complete: function () {
+        window.Velocity(showElement, 'transition.slideDownIn', {
+          duration: 200
+        });
+      }
+    })
+    hideElement.classList.remove(SIDEBAR_BODY_ACTIVE);
+    showElement.classList.add(SIDEBAR_BODY_ACTIVE);
+  }
+
+  postToc.addEventListener('transitionend', function() {
+    this.classList.remove(SLIDE_UP_IN);
+  });
+
+
+  if (sidebarBody.classList.contains('pisces') || sidebarBody.classList.contains('gemini')) {
+    let hasFix = false;
+    let scrollEl = document.querySelector('.main-continer');
+    let limitTop = document.querySelector('#nav_ul').children.length * 42 + 162;
+    window.addEventListener('scroll', function(e) {
+    if (document.scrollingElement.scrollTop >= limitTop) {
+      if (!hasFix) {
+        sidebar.classList.add('sidebar-fixed');
+        hasFix = true;
+      }
+    } else {
+      if (hasFix) {
+        sidebar.classList.remove('sidebar-fixed');
+        hasFix = false;
+      }
+    }
+  });
+  }
+  
+</script>
+          <div class="section-box box-shadow-wrapper">
+            <div class="section bg-color post post-page">
+              <div class="article-box">
+    <header class="post-header">
+  <h1 class="post-title">
+    <a class="post-title-link" href="https://zanegjun.github.io/post/lesslessquan-ju-guang-zhao-ji-zhu-greatergreater-bi-ji-di-er-zhang-bing-xing-chu-li-qi-jia-gou">
+      《全局光照技术》笔记第二章-并行处理器架构
+    </a>
+  </h1>
+  <div class="post-meta">
+    
+    <span class="meta-item pc-show">
+      <i class="fa fa-calendar-o"></i>
+      <span>发布于</span>
+      <span>2020-02-04</span>
+    </span>
+    
+      <span class="meta-item">
+        <span class="post-meta-divider pc-show">|</span>
+        <i class="fa fa-folder-o"></i>
+        <span class="pc-show">分类于</span>
+        
+          
+            <a href="https://zanegjun.github.io/tag/6uwbRBXgb">
+              <span>笔记</span>
+            </a>
+          
+        
+      </span>
+      <span class="post-meta-divider">|</span>
+    
+    <span class="meta-item">
+      <i class="fa fa-clock-o"></i>
+      <span>20分钟</span>
+    </span>
+    <span class="meta-item">
+      <span class="post-meta-divider">|</span>
+      <i class="fa fa-file-word-o"></i>
+      <span>5750<span class="pc-show">字数</span></span>
+    </span>
+  </div>
+</header>
+</div>
+              <div class="post-body next-md-body" id="post_body">
+                <h1 id="cpu">CPU</h1>
+<h2 id="21cpu应用程序执行模型">2.1CPU应用程序执行模型</h2>
+<p>  现代CPU遵循冯·诺依曼提出的处理器架构。在该结构中，一个具有处理单元的点子数字计算机由以下部分组成：</p>
+<ul>
+<li>一个用于进行二进制运算的算术逻辑单元(ALU)</li>
+<li>一个用来告诉存储指令和数据的寄存器组</li>
+<li>一个用来控制指令读取的控制单元</li>
+<li>一个用于存储所有指令和数据的内存</li>
+<li>外加一些大容量存储设备及输入输出设备</li>
+</ul>
+<p>  通常执行过程为 <mark><strong>处理器从内存中将指令和数据(包括地址)读取到寄存器并解码，然后执行该指令。</strong></mark> 因为程序和数据存储在内存中，和处理器分开，因此数据需要在内存和处理器之间进行传输。随着现代处理器运行速度提高，更多时间用于等待从内存获取数据。主要有以下几个方法用于克服这个瓶颈:</p>
+<ul>
+<li><strong>缓存</strong> 设计一些容量小，速度快的缓存来减少从主存取数据的时间</li>
+<li><strong>预取</strong> 通过在处理器读取数据之前预测可能会读取的数据，从而提前读取到缓存中</li>
+<li><strong>多线程</strong> 并发处理，主要有指令级并行、线程级并行、处理器级并行</li>
+</ul>
+<h3 id="211缓存">2.1.1缓存</h3>
+<p>  缓存是一种容量更小，更快的内存，缓存里的数据来自于内存。处理器需要向主存或者指令或者数据是，先查询缓存，如果数据不在L1缓存中，则向L2/L3发出读取请求，如果还是没有则从主存读取。<strong>L1缓存的速度通常能达到或者接近处理器的时钟速度，因此假设写入和读取都是在L1中完成，则指令的执行很有可能接近处理器全速。</strong> L1通常只有16KB或者32KB，L2速度慢些，但是容量更大，通常256KB，L3通常几兆，但是速度最慢。<br>
+  在缓存设计中，L1和L2都是每个核独享，而L3则是所有核共享。缓存的设计利用局部性原理，包括时间局部性和空间局部性。时间局部性指之前访问的数据很可能还要被再次访问；空间局部性指刚刚被访问的数据附近的数据，可能马上要被访问。注意缓存命中率与缓存失效，失效可能是第一次访问新的数据，又或者因为缓存的尺寸限制，旧的缓存被LRU给清理了。<br>
+  缓存的设计是有代价的，增大缓存会增加芯片面积。</p>
+<h3 id="212预取">2.1.2预取</h3>
+<p>  预取是指通过在处理器读取数据之前预测可能会被读取的数据，提前读取到缓冲中。一般集成在处理器内部，各级缓存都有自己的预取器。一些编译器如GCC还通过在编译阶段修改源码，在其中插入预期指令实现软件预取。<br>
+  最常用的数据预取是 <strong><mark>常数步幅模式</mark></strong>,即根据之前数据访问的模式(在一个常数范围内的步幅)预先载入当前数据邻近对应长度范围的数据。<strong>但是数据预取器不擅长对随机数据的预测</strong>。程序指令在空间上的分布更加线性，其相对数据预取更加简单。然而有以下几种情况使得程序指令出现非线性化：</p>
+<ul>
+<li>函数指针的应用，由于处理器只有在执行指令的时候才会知道其指令是追踪一个指针，所以指令预取器对函数指针没有办法进行预处理。</li>
+<li>分支预测，分支决定只有在条件被计算出来才能发生。所以分支预测必须记录过去的历史数据，以此计算出一定的模式并度后续的分支使用该模式来预测分支走向，这就是各种不同分支预测算法的基础。</li>
+</ul>
+<h3 id="22并行计算架构">2.2并行计算架构</h3>
+<h4 id="221指令级并行">2.2.1指令级并行</h4>
+<p>  指令级并行计算称为ILP(instruction-level parallelism),指一个单处理器同时执行多条指令的能力。IPL计数允许编译器和硬件重叠地执行多个指令，或者甚至按不同的顺序执行指令。IPL对程序员是透明的。下面介绍一些比较流行的ILP技术。</p>
+<h5 id="2211指令管线化">2.2.1.1指令管线化</h5>
+<p>  意思是将一条指令完整的执行流程分成多个阶段，每个阶段允许一条单独的指令执行。<mark>这样的划分有一些重要的原因，处理器内部正度这些特定的阶段都有专门的计算功能，如果一次只处理一条指令，当其中任何一个阶段发生延迟或者缓存失效，都会导致其他功能除以等待空闲状态，不能充分利用处理器的资源。</mark> 一般可以分为经典的5个阶段:</p>
+<ol>
+<li>IF:获取指令阶段，处理器从L1获取一个32位(64位机则64位)的指令，该操作通常具有1个时钟周期的延迟。</li>
+<li>ID/RF：解码指令以及从寄存器获取操作数</li>
+<li>EX：执行</li>
+<li>MEM：读取内存</li>
+<li>WB：写回寄存器</li>
+</ol>
+<p>  指令管线化通过充分利用各个生产流水线，提高了整个关系的吞吐能力。然后并不能减少延迟，当指令对应阶段出现延迟，该指令将处于停止等待状态。指令管线化假设多哟指令是可以并行执行的，当程序中的指令出现依赖，我们称为一个障碍。一般有下面的方法来处理串行指令的并行障碍</p>
+<ul>
+<li>
+<p><strong>管线气泡</strong><br>
+  最简单的一种处理方式，当指令包含障碍是，其将在解码阶段被识别，同时处理器会创建一个气泡占据该指令的解码阶段，使当前管线的解码阶段处于空闲等待状态，管线气泡将导致后续一个或多个指令被延迟。</p>
+</li>
+<li>
+<p><strong>操作数前移</strong><br>
+  操作数前移中，处理器需要对指令探测这种依赖性的存在，然后根据探测结果判断是需要从寄存器获取操作数，还是直接通过相关的电路直接获取前一指令的值。</p>
+</li>
+<li>
+<p><strong>乱序执行</strong><br>
+  乱序执行基于这个的事实，即如果后面的指令不依赖前面的指令，或者说它此时具备执行指令需要的操作数据，则它可以闲鱼前面的指令被执行。然后乱序执行必须保证指令执行结果输出的顺序与程序顺序保持一致，以保证最终程序运行的正确性。</p>
+</li>
+<li>
+<p><strong>分支预测对指令管线的影响</strong><br>
+  分支预测失败会导致处理器放弃并销毁之前所有未执行完且判断错误的分支指令。因为分支的真实走向必须等到if比较指令执行完毕，并且将结果写入到寄存器之后，处理器才会知道真正的分支走向。例如有A是比较执行，BCD是错误的分支走向，只有等到A指令执行完毕才能知道分支走向的正确性，这时候BCD因为流水线的原因，会依次被执行，当A执行完毕处理器知道BCD是错误的走向，需要销毁所有关于BCD在寄存器的数据及其他状态，然后将正确的EFG指令载入执行单元执行指令计算。<br>
+  如果if比较函数是对两个浮点数进行比较，代价更高，浮点数比证书的比较要花费更多的时钟周期。<br>
+  现代处理大都会采用一种方法避免比较和跳转操作。这种方法基于一个第三个参数，来在两个操作数之间进行选择，而不需要执行比较和跳转指令，这称为条件转移或无分支选择。</p>
+</li>
+</ul>
+<h4 id="222线程级并行">2.2.2线程级并行</h4>
+<p>  多线程处理器内部可以支持多个线程并行执行，但是这些线程不是真正地同时执行，而是通过处理器的控制交叉地执行。当当前正在执行的线程遇到缓存失效或者其他事件，处理器即自动切换到其他处于等待执行状态的线程执行指令。<br>
+  硬件对多线程支持目标是，允许在等待延迟的线程和已经准备好的被执行线程之间保持快速切换。为了这个目的，每个线程都需要拥有自己的指令和数据寄存器集合，包括用于存储指令管线调度相关的一些处理单元和跳读信息，当发现线程切换，直接在高速的寄存器之间执行赋值和读取，不需要重新从缓存读取数据。现代处理器一般在一个时钟周期内可以完成线程切换。</p>
+<h5 id="2221同时多线程技术">2.2.2.1同时多线程技术</h5>
+<p>  多线程有多种实现方案:</p>
+<ul>
+<li>最简单是块多线程(block multithreading)，这种方案会一直执行一个线程，直至线程遇到很大的延迟(如缓存失效,可能需要上百个时钟周期)时才切换到另一个处于&quot;可执行状态&quot;的线程。</li>
+<li>较为聪明的方案称为交叉多线程，在每个时钟周期都使用一个不同于上一个时钟周期的线程。因为线程间是相对独立的，每次从不同的线程取出一条指令加入到指令管线，这样理想的情况下指令管线中每个阶段执行的是不同线程中的指令，从而几乎不会有数据依赖关系。但是缺点是每个指令阶段都需要额外的计算和存储成本用来追踪这些线程ID。</li>
+</ul>
+<p>  上面两种都可以称为时分多线程技术(TMT),对于给定的任何时间，指令管线的每个阶段只有一个线程的指令在执行。而现代处理器比较高级的多线程技术方案是同时多线程技术(SMT)，在一个给定的时间内及指令阶段，SMT处理器可以同时又来自多个线程的指令在执行。</p>
+<h4 id="223处理器级并行">2.2.3处理器级并行</h4>
+<p>  多处理器架构是指一个计算机系统拥有多个物理额处理器或者拥有多个核，区别为多喝处理器每个核仅拥有L1缓存及寄存器，统一芯片内的核共享L2及主存，而多个单独的物理处理器仅共享主存并拥有自己的缓存系统。</p>
+<h5 id="2231多核处理器架构的对等性">2.2.3.1多核处理器架构的对等性</h5>
+<p>  对称性指所有处理器的地位和功能是否对等，非对等处理器机构比较典型是Cell处理器架构，思想是用一个常规处理器作为监管处理器，该处理器与大量的告诉协作处理器相连。它跟GPU很像，它独特之处在于摒弃了传统的内存缓存结构，直接将数据和指令直接发送到每个协作处理器的私有内存，让它一次性尽可能做更多计算。协作处理器主要聚焦于数据密集型计算。处理器中，缓存系统占据了很多芯片面积，并且导致能耗增加。这种设计结构能大大减少芯片面积及能耗。</p>
+<h5 id="2232多处理器架构的通信方式">2.2.3.2多处理器架构的通信方式</h5>
+<p>  多处理器架构可以分为共享内存以及基于网络的消息传递方式。<br>
+  共享内存中，每个处理器有自己的缓存系统，但是他们共享整个计算机系统的主内存。需要注意的是缓存一致性问题，这是限制一个处理器中核数不能太多的一个重要因素。<br>
+  另一种多处理器架构称为集群，通过将一些独立的通常是廉价的计算机系统，通过网络等方式联通起来，组成一个多处理器系统。适合于线程之间的耦合相对比较弱的计算。</p>
+<h1 id="gpu">GPU</h1>
+<h2 id="231为什么需要一个并行计算架构">2.3.1为什么需要一个并行计算架构</h2>
+<p>  一般的多处理器机构执行大规模并行计算的限制来源于针对串行计算优化的缓存系统。高速缓存系统的成本非常高，并且占用芯片很大面积，操作数从主内存到ALU之间的传输需要耗费大量的电能。这些因素使得基于缓存的处理器系统很难扩张以应付大规模的并行计算。</p>
+<h2 id="232内存结构">2.3.2内存结构</h2>
+<p>  GPU使用一种称为程序托管的内存模型，即数据额存放地点由程序员决定，因此它要求程序员需要对GPU内存结构有一定了解。而CPU使用一种称为硬件托管的内存模型，缓存会自动根据局部性特征获取当前正在执行指令附近的指令以及当前正在处理数据附近的数据，并在指令将计算结果写入到寄存器之后自动将其写入到缓存系统，以及更新多处理器架构中其他处理器的缓存，一切都是硬件自动完成。<br>
+  <img src="https://raw.githubusercontent.com/ZaneGJun/PictureWarehouse/master/2.12_min.JPG" alt="image" loading="lazy"><br>
+  上图所示是NIVIDIA的一个GPU内存结构，其中流处理器族(Stream multiprocessor,SM)相当于一个CPU核，每个SM内部有多个流处理器(Stream processor,SP)，每个SP用于执行并行计算 中的一个独立的线程。<br>
+  GPU中的内存分为4种:</p>
+<ol>
+<li>寄存器</li>
+<li>共享内存</li>
+<li>常量/纹理内存</li>
+<li>全局内存</li>
+</ol>
+<table>
+<thead>
+<tr>
+<th>存储类型</th>
+<th>带宽</th>
+<th>延迟</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>寄存器</td>
+<td>约8TB/s</td>
+<td>1个周期</td>
+</tr>
+<tr>
+<td>共享内存</td>
+<td>约1.5TB/s</td>
+<td>1-32个周期</td>
+</tr>
+<tr>
+<td>纹理/常量内存</td>
+<td>约200MB/s</td>
+<td>400-600个周期</td>
+</tr>
+<tr>
+<td>全局内存</td>
+<td>约200MB/s</td>
+<td>400-600个周期</td>
+</tr>
+</tbody>
+</table>
+<h3 id="2321全局内存">2.3.2.1全局内存</h3>
+<p>  GPU拥有自己独立的内存，所以宿主程序需要将数据从CPU传输到GPU以计算。通常GPU设备都是通过PCI-E总线与处理器相连，目前PCI-E 3.0 的传输率为8G/s。<br>
+  <mark>GPU中的主内存称为全局内存，这是因为GPU和CPU都能对其进行写操作。宿主程序要想在GPU上执行计算，首先将CPU中的数据和指令通过PCI-E总线传输至GPU的全局内存中，接着GPU中的各个内核线程从全局内存中读取数据并执行计算，然后将计算结果写回到全局内存，最后宿主程序再从GPU全局内存中读取数据回CPU。</mark><br>
+  数据从CPU传到GPU全局内存以及全局内存到CPU内核函数的寄存器之间的传输都会产生大量的延迟。<strong>全局内存是GPU中内核函数访问最慢的内存</strong>，由于GPU使用程序托管的内存模型，所以内核函数可以选择不需要将每个变量的中间结果都写回到全局内存，这些中间数据可以保存在内核函数所在的执行单元本地，而等到内核函数执行完毕才将本地的数据写回到全局内存。这大大节省了数据在全局内存和内核函数之间的不必要的传输时间。</p>
+<h3 id="2322常量纹理内存">2.3.2.2常量/纹理内存</h3>
+<p>  常量/纹理内存其实只是全局内存的一种虚拟地址形式，GPU并没有特殊保留的常量/纹理内存，但是常量/纹理内存能够提供高速缓存，此外它们都是只读内存。常量内存合一被缓存到常量内存缓存存储器，纹理内存可以被缓存到纹理内存缓存存储器，这些存储器通常都是L1级缓存，可以提供较全局内存更快的访问速度。<br>
+  对于纹理内存，它提供基于硬件的线性插值功能。</p>
+<h3 id="2323共享缓存">2.3.2.3共享缓存</h3>
+<p>  由前面可知，内核函数的多个线程会被分配到多个SM上执行，据此我们可以对并行计算处理的数据进行一定的划分成多个处理子块，在每个子块内部的多个线程可以共享一些局部数据。这些单个SM内部的局部数据不需要通过缓慢的全局内存进行存储和读取，它们可以被存储在一个SM内部的共享内存中。<br>
+  为了提供更高的带宽，共享内存使用的是基于存储器切换的架构，它将共享内存平均分成多个尺寸相同的内存模块，称为存储体，这些存储体内部的孽畜可以被同时使用。任何对共享内存度或者写的操作可以均分到n个不同的存储体地址，每个存储体地址都可以被同时访问，使其可以提供相对于单个内存模块n被带宽。<br>
+  但是需要注意的是可能会有存储体冲突。</p>
+<h3 id="2324寄存器">2.3.2.4寄存器</h3>
+<p>  GPU的每个SM拥有一个巨大的寄存器文件，它通常包含上千个寄存器，这些寄存器平均分配到每个SP，根据线程的数量，每个线程可以使用几个到几时个寄存器。<br>
+  使用数量巨大的寄存器，原因有:</p>
+<ul>
+<li>延迟隐藏的需求</li>
+<li>GPU寄存器特征，CPU中，指令执行完后写入寄存器中的数据会被自动写入到缓存中，然后缓存系统会广播更新多处理器机构中其他处理器的缓存，以及将数据写入到主内存。GPU中，写入到寄存器得数据会一直停留在该寄存器中，直至有新的数据写入或者当前线程执行完毕自动退出，寄存器数据被重置。<mark>这样做的原因是，由于GPU可能同时处理上千个相同指令的线程，每个线程在执行过程中某些中间计算结果只供自己所在的线程使用，所以它完全没必要写入到全局内存。例如OpenGL着色程序，通常只有最后才会将结果写回到全局内存，这些值可能是顶点着色器质性过变换的坐标值，或者像素着色器中计算出的颜色值。</mark></li>
+</ul>
+<h2 id="234延迟隐藏">2.3.4延迟隐藏</h2>
+<p>  为了克服读写全局内存的延迟，通过一些辅助手段“隐藏”这种延迟，称为延迟隐藏。在CPU中提到单个处理器的多线程技术，当一个线程处于延迟状态，处理器自动切换到其他组处于等待执行状态的线程进行执行，这样通过使用多于处理器能够处理个数的线程数目，内存读取的延迟也能够在一定程度上隐藏。<br>
+  其中GPU在这方面的改进有，一是使用能够容纳更多的等待线程。例如只有192个SP，但是可以分配最多高达2048个线程，即是说当每个时钟周期有192个线程在执行计算的时候，还可以有将近2000个线程正在从内存中获取数据，这样通过大量线程就使得大部分线程的内存或者延迟被隐藏。<br>
+  CPU多线程技术的另一个瓶颈来源于少量的寄存器。<mark>虽然每个时钟周期可以容纳多个线程处于延迟状态，但是由于寄存器数量不足，这些线程的数据被放入在缓存系统中，使得每次切换线程时都需要寄存器数据的换进换出，因此执行多线程就需要大量的延迟。</mark> GPU同样用到上下文切换的概念，但是因为拥有数量众多的寄存器，它致力于为每个线程都分配真实的寄存器，哪怕处于等待状态的线程，因此一次上下文调换只需要重新执行另一个寄存器组。</p>
+<h2 id="235全局内存访问的合并">2.3.5全局内存访问的合并</h2>
+<p>  并行计算的性能，还可以得益于其程序和数据的一致性，一致性越高，能够实现的吞吐率就越高，反之数据的存储越发散，将导致更低的吞吐率。<br>
+  GPU使用一种称为内存合并的计数来充分利用并行程序的数据连续性。<mark><strong>当连续的线程向全局内存发起数据请求，并且请求的内存块是连续对齐时，这些线程的多个内存请求会被合并成一次请求，然后一次性返回所有数据。内存合并使得多个线程的内存请求只需要一个存储事务即可解决问题。</strong></mark><br>
+  要想获得内存合并，每个线程访问的数据必须数据对齐，否则不能获得内存合并的好处。</p>
+<h3 id="2351分支">2.3.5.1分支</h3>
+<p>  GPU不是为了执行串行代码而设计的，为了高效执行大量的并行计算，GPU并没有像CPU那么复杂的硬件实现的分支预测功能，需要程序员小心地处理。<strong>这样导致的结果是，当程序中包含分支指令是，如果咋一个线程束内的分支分布是不连续的，将导致在处理分支的时候部分线程处于空闲状态，不能充分利用GPU的计算资源。更糟糕的是，这种由于分支导致的线程并不会导致处理器将计算资源切换到其他线程束执行，即是说，由于分支导致的部分线程的限制并不能算作线程阻塞，只有内存读取的延迟才能促使线程切换。</strong><br>
+  对于分支指令，最有效的方法是尽量保证分支的连续性，对于所有线程组成的条件数组排序，或者以某种方式的处理，使得分支能够连续排列。</p>
+
+              </div>
+              <div class="post-footer">
+  <ul class="post-copyright">
+    <li class="post-copyright-author">
+      <strong>本文作者：</strong>
+      ZaneGJun Blob
+    </li>
+    <li class="post-copyright-link">
+      <strong>本文链接：</strong>
+      <a href="https://zanegjun.github.io/post/lesslessquan-ju-guang-zhao-ji-zhu-greatergreater-bi-ji-di-er-zhang-bing-xing-chu-li-qi-jia-gou" title="《全局光照技术》笔记第二章-并行处理器架构">《全局光照技术》笔记第二章-并行处理器架构</a>
+    </li>
+    <li class="post-copyright-license">
+      <strong>版权声明： </strong>
+      本博客所有文章除特别声明外，转载请注明出处！
+    </li>
+  </ul>
+  <div class="tags">
+    
+      <a href="https://zanegjun.github.io/tag/6uwbRBXgb"># 笔记</a>
+    
+  </div>
+  <div class="nav">
+    <div class="nav-prev">
+      
+    </div>
+    <div class="nav-next">
+      
+        <a class="nav-pc-next" title="《全局光照技术》笔记-第一章之PBR" href="https://zanegjun.github.io/post/lesslessquan-ju-guang-zhao-ji-zhu-greatergreater-bi-ji-di-yi-zhang-zhi-pbr">《全局光照技术》笔记-第一章之PBR</a>
+        <a class="nav-mobile-next" title="《全局光照技术》笔记-第一章之PBR" href="https://zanegjun.github.io/post/lesslessquan-ju-guang-zhao-ji-zhu-greatergreater-bi-ji-di-yi-zhang-zhi-pbr">下一篇</a>
+        <i class="fa fa-chevron-right"></i>
+      
+    </div>
+  </div>
+</div>
+              
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="footer-box">
+  <footer class="footer">
+    <div class="copyright">
+      © 2019-2020 <i class="fa fa-heart"></i> HsxyHao
+    </div>
+    <div class="poweredby">
+      Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a>
+    </div>
+  </footer>
+  
+  
+    <div class="drawer-box left" id="drawer_box">
+      <span class="muse-line muse-line-first"></span>
+      <span class="muse-line muse-line-middle"></span>
+      <span class="muse-line muse-line-last"></span>
+    </div>
+  
+  <div class="mist back-to-top" id="back_to_top">
+    <i class="fa fa-arrow-up"></i>
+    
+  </div>
+  
+  
+    <link rel="stylesheet" href="/media/live2d/histoire/css/live2d.css" />
+<div class="box-scale">
+  <div id="landlord" style="left:5px;bottom:0px;" data-key="">
+    <div class="message" style="opacity:0"></div>
+    <canvas id="live2d" width="500" height="560" class="live2d"></canvas>
+    <div class="live_talk_input_body">
+      <div class="live_talk_input_name_body">
+        <input name="name" type="text" class="live_talk_name white_input" id="AIuserName" autocomplete="off" placeholder="你的名字" />
+      </div>
+      <div class="live_talk_input_text_body">
+        <input name="talk" type="text" class="live_talk_talk white_input" id="AIuserText" autocomplete="off" placeholder="要和我聊什么呀？"/>
+        <button type="button" class="live_talk_send_btn" id="talk_send">发送</button>
+      </div>
+    </div>
+    <input name="live_talk" id="live_talk" value="1" type="hidden" />
+    <div class="live_ico_box">
+      <div class="live_ico_item type_info" id="showInfoBtn"></div>
+      <div class="live_ico_item type_talk" id="showTalkBtn"></div>
+      
+      <div class="live_ico_item type_youdu" id="youduButton"></div>
+      <div class="live_ico_item type_quit" id="hideButton"></div>
+      <input name="live_statu_val" id="live_statu_val" value="0" type="hidden" />
+      <audio src="" style="display:none;" id="live2d_bgm" data-bgm="0" preload="none"></audio>
+      <input id="duType" value="douqilai" type="hidden">
+      
+    </div>
+  </div>
+</div>
+<div id="open_live2d">召唤伊斯特瓦尔</div>
+<script type="text/javascript" src="https://apps.bdimg.com/libs/jquery/1.7.1/jquery.min.js"></script>
+<script>
+var message_Path = '/media/live2d/histoire/';
+let landlord = document.querySelector('#landlord');
+var apiKey = landlord.dataset.key;
+</script>
+<script type="text/javascript" src="/media/live2d/histoire/js/live2d.js"></script>
+<script type="text/javascript" src="/media/live2d/histoire/js/message.js"></script>
+  
+  
+</div>
+<script>
+
+  let sideBarOpen = 'sidebar-open';
+  let body = document.body;
+  let back2Top = document.querySelector('#back_to_top'),
+  back2TopText = document.querySelector('#back_to_top_text'),
+  drawerBox = document.querySelector('#drawer_box'),
+  rightSideBar = document.querySelector('.sidebar'),
+  viewport = document.querySelector('body');
+
+  function scrollAnimation(currentY, targetY) {
+   
+    let needScrollTop = targetY - currentY
+    let _currentY = currentY
+    setTimeout(() => {
+      const dist = Math.ceil(needScrollTop / 10)
+      _currentY += dist
+      window.scrollTo(_currentY, currentY)
+      if (needScrollTop > 10 || needScrollTop < -10) {
+        scrollAnimation(_currentY, targetY)
+      } else {
+        window.scrollTo(_currentY, targetY)
+      }
+    }, 1)
+  }
+
+  back2Top.addEventListener("click", function(e) {
+    scrollAnimation(document.scrollingElement.scrollTop, 0);
+    e.stopPropagation();
+    return false;
+  });
+  
+  window.addEventListener('scroll', function(e) {
+    let percent = document.scrollingElement.scrollTop / (document.scrollingElement.scrollHeight - document.scrollingElement.clientHeight) * 100;
+    if (percent > 1 && !back2Top.classList.contains('back-top-active')) {
+      back2Top.classList.add('back-top-active');
+    }
+    if (percent == 0) {
+      back2Top.classList.remove('back-top-active');
+    }
+    if (back2TopText) {
+      back2TopText.textContent = Math.floor(percent);
+    }
+  });
+
+  
+  let hasCacu = false;
+  window.onresize = function() {
+    if (window.width > 991) {
+      calcuHeight();
+    } else {
+      hasCacu = false;
+    }
+  }
+
+  function calcuHeight() {
+    // 动态调整站点概览高度
+    if (!hasCacu && back2Top.classList.contains('pisces') || back2Top.classList.contains('gemini')) {
+      let sideBar = document.querySelector('.sidebar');
+      let navUl = document.querySelector('#site_nav');
+      sideBar.style = 'margin-top:' + (navUl.offsetHeight + navUl.offsetTop + 15) + 'px;';
+      hasCacu = true;
+    }
+  }
+  calcuHeight();
+  
+  let open = false, MOTION_TIME = 300, RIGHT_MOVE_DIS = '320px';
+
+  if (drawerBox) {
+    let rightMotions = document.querySelectorAll('.right-motion');
+    let right = drawerBox.classList.contains('right');
+
+    let transitionDir = right ? "transition.slideRightIn" : "transition.slideLeftIn";
+
+    let openProp, closeProp;
+    if (right) {
+      openProp = {
+        paddingRight: RIGHT_MOVE_DIS 
+      };
+      closeProp = {
+        paddingRight: '0px'
+      };
+    } else {
+      openProp = {
+        paddingLeft: RIGHT_MOVE_DIS 
+      };
+      closeProp = {
+        paddingLeft: '0px'
+      };
+    }
+
+    drawerBox.onclick = function() {
+      open = !open;
+      window.Velocity(rightSideBar, 'stop');
+      window.Velocity(viewport, 'stop');
+      window.Velocity(rightMotions, 'stop');
+      if (open) {
+        window.Velocity(rightSideBar, {
+          width: RIGHT_MOVE_DIS
+        }, {
+          duration: MOTION_TIME,
+          begin: function() {
+            window.Velocity(rightMotions, transitionDir,{ });
+          }
+        })
+        window.Velocity(viewport, openProp,{
+          duration: MOTION_TIME
+        });
+      } else {
+        window.Velocity(rightSideBar, {
+          width: '0px'
+        }, {
+          duration: MOTION_TIME,
+          begin: function() {
+            window.Velocity(rightMotions, {
+              opacity: 0
+            });
+          }
+        })
+        window.Velocity(viewport, closeProp ,{
+          duration: MOTION_TIME
+        });
+      }
+      for (let i = 0; i < drawerBox.children.length; i++) {
+        drawerBox.children[i].classList.toggle('muse-line');
+      }
+      drawerBox.classList.toggle(sideBarOpen);
+    }
+  }
+
+  // 代码高亮
+  hljs.initHighlightingOnLoad();
+</script>
+    </div>
+  </body>
+  <script src="/media/js/motion.js"></script>
+</html>
