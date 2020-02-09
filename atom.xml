@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://zanegjun.github.io</id>
     <title>ZaneGJun Blob</title>
-    <updated>2020-02-04T12:15:34.597Z</updated>
+    <updated>2020-02-09T13:26:13.233Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://zanegjun.github.io"/>
     <link rel="self" href="https://zanegjun.github.io/atom.xml"/>
@@ -10,6 +10,393 @@
     <logo>https://zanegjun.github.io/images/avatar.png</logo>
     <icon>https://zanegjun.github.io/favicon.ico</icon>
     <rights>All rights reserved 2020, ZaneGJun Blob</rights>
+    <entry>
+        <title type="html"><![CDATA[《全局光照技术》第三章笔记-图形处理器接口]]></title>
+        <id>https://zanegjun.github.io/post/lesslessquan-ju-guang-zhao-ji-zhu-greatergreater-di-san-zhang-bi-ji-tu-xing-chu-li-qi-jie-kou</id>
+        <link href="https://zanegjun.github.io/post/lesslessquan-ju-guang-zhao-ji-zhu-greatergreater-di-san-zhang-bi-ji-tu-xing-chu-li-qi-jie-kou">
+        </link>
+        <updated>2020-02-09T13:25:03.000Z</updated>
+        <content type="html"><![CDATA[<h1 id="31渲染管线综述">3.1渲染管线综述</h1>
+<p>  从宏观角度，我们可以把OpenGL图形接口相关内容划分为三大块:</p>
+<ul>
+<li>CPU宿主应用程序与GPU渲染管线的交互</li>
+<li>GPU中各种OpenGL对象</li>
+<li>几种不同的渲染管线</li>
+</ul>
+<p>  <mark><strong>理解宿主程序与渲染管线进行交互的关键是状态机的概念。</strong></mark> 宿主程序并不能直接调用GPU执行一个命令，而是通过一个状态机来记录所有宿主程序当前要执行GPU应用程序的各种状态，这些状态的设置占据了大部分图形接口的内容，然后宿主通过Draw等相关的命令将这些状态及后面讲述的各种OpenGL对象提交到GPU中，GPU开始根据各种状态的设置开始执行图形渲染，或者纯粹的计算工作(如计算着色器)，或者其他一些特殊命令(例如将OpenGL缓存中的数据读取回主程序)。<br>
+  状态信息很多是用于控制各种OPenGL对象以及这些对象的读写操作。<strong>由于宿主程序不能直接获取GPU内存的指针地址，所欲一个OpenGL对象包含各种状态信息用来指导该对象在OpenGL被怎么使用，例如<mark>大小，数据类型，对象类型</mark> 。</strong> 另一方面，<mark>这些对象大部分不是有着色器分配的，所以我们在编写着色器程序的时候并不能直接取得这些OpenGL对象的引用，那么OpenGL中对于主色去程序访问这些OpenGL对象严重地依赖于一种绑定(Binding)机制。</mark> 着色器程序在被编译和链接的时候会给每个属性分配一个索引地址，宿主程序可以将这些索引地址绑定到某个OpenGL对象上，然后在GPU中执行的时候OpenGL执行环节就可以正确获取到要访问的数据；也有其他OpenGL状态用来控制这种着色器对OpenGL对象的访问，例如是否需要对纹理进行某种方式的过滤操作。<br>
+  设置完各种OpenGL对象的状态，以及绑定这些对象到着色器中的属性索引，并将这些对象(包括着色器对象)上传到GPU之后，OpenGL执行环境便开始执行各种管线。除了使用最多的光栅化管线，我们还可以将渲染管线中对顶点的处理结果存储在变换反馈缓存中，并且终止片元着色器的执行，这可以用来使用GPU进行一些变换或者细分操作，并将这些操作结果读回到宿主程序或者供后续的管线作为顶点数据使用。</p>
+<h1 id="32opengl对象">3.2OpenGL对象</h1>
+<p>  <strong>GPU编程模型相较CPU程序最大的区别在于内存对象的使用。</strong> <mark>在GPU并行编程中，内存对象通常并不由这些内核函数或者着色器直接分配(仅供线程内部使用的本地变量除外)，因为并行程序在执行的时候会有多个实例，所以这些实例只能分配本地实例内使用的本地变量，对于全局变量，只有有调度这些实例的“宿主”程序进行分配，这就需要某种机制将外部程序分配的全局变量绑定到内核函数中的变量上。</mark><br>
+  因此OpenGL使用一个状态列表来管理OpenGL对象，每个对象都拥有自己的状态列表，不同类型的对象拥有各自不同的状态列表，这些对象状态最终作为整个OpenGL状态的一部分被提交到GPU供着色器或者其他固定管线阶段使用。在OpenGL中为了修改一个对象的状态值，首先需要绑定它到OpenGL上下文中，这通过如下命令：</p>
+<pre><code>void glBind*(GLenum target, GLuint object);
+</code></pre>
+<p>其中target参数指示该对象的用途，OpenGL使用target来区分不同用途的对象。<br>
+  当绑定一个OpenGL对象到一个目标后，后续所有对该目标进行修改的命令都会修改该绑定对象的状态。OpenGL使用这种方式修改对象，是因为大部分OpenGL命令的调用都不是立即发送到GPU执行的，他们被保存为一个命令列表，这些前置命令相当于对一个渲染管线的各种设置，包括对固定管线的控制火灾着色器程序会使用的数据(如纹理和顶点数组)，当所有设置完毕后，我们才通过Draw相关的函数通知GPU执行渲染管线，此时才会将所有这些设置发送到GPU开始执行(包括上传所有OpenGL对象的数据到GPU)。<br>
+  由于OpenGL通过这种绑定机制来修改OPenGL对象的状态，所以当我们修改完一个对象后，应该立即对该对象进行解绑，以防止后面的命令可能对该对象进行超出预期的修改。可以绑定到每种目标对应的默认对象，即名称为0的对象执行解绑。<br>
+  需要注意，每个OpenGL对象都是具有一定类型的，并且每种类型都分别实现OpenGL某些方面的功能，我们必须分配相应类型的对象来实现特定的功能。<br>
+  通过以上内容，我们可以看出一个OpenGL对象有 <strong><mark>类型</mark></strong> 和 <strong><mark>用途</mark></strong> 两种属性：</p>
+<ul>
+<li>类型：基本上定义一个对象在接口层面的用法，比如所有缓存对象的用法都是一致的，下表为所有对象的类型:</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>标识符</th>
+<th>对象类型</th>
+<th>是否容器</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GL_BUFFER</td>
+<td>缓存对象</td>
+<td>否</td>
+</tr>
+<tr>
+<td>GL_SHADER</td>
+<td>着色器对象</td>
+<td>否</td>
+</tr>
+<tr>
+<td>GL_PROGRAM</td>
+<td>着色程序对象</td>
+<td>否</td>
+</tr>
+<tr>
+<td>GL_VERTEX_ARRAY</td>
+<td>顶点数组对象</td>
+<td>是</td>
+</tr>
+<tr>
+<td>GL_QUERY</td>
+<td>查询对象</td>
+<td>否</td>
+</tr>
+<tr>
+<td>GL_PROGRAM_PIPELINE</td>
+<td>程序管线对象</td>
+<td>是</td>
+</tr>
+<tr>
+<td>GL_TRANSFORM_FEEDBACK</td>
+<td>变换反馈对象</td>
+<td>是</td>
+</tr>
+<tr>
+<td>GL_SAMPLER</td>
+<td>采样器对象</td>
+<td>否</td>
+</tr>
+<tr>
+<td>GL_TEXTURE</td>
+<td>纹理对象</td>
+<td>否</td>
+</tr>
+<tr>
+<td>GL_RENDERBUFFER</td>
+<td>渲染缓存对象</td>
+<td>否</td>
+</tr>
+<tr>
+<td>GL_FRAMEBUFFER</td>
+<td>帧缓存对象</td>
+<td>是</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>用途：一个对象在OpenGL具体被用来做什么，它还需要被绑定到一个用途对象的绑定目标上，下面列出一个缓存类型的对象可以被绑定的绑定目标：</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>目标名称</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ARRAY_BUFFER</td>
+<td>顶点属性</td>
+</tr>
+<tr>
+<td>ATOMIC_COUNTER_BUFFER</td>
+<td>高性能原子计数器存储</td>
+</tr>
+<tr>
+<td>COPY_READ_BUFFER</td>
+<td>缓存复制源</td>
+</tr>
+<tr>
+<td>COPY_WRITE_BUFFER</td>
+<td>缓存复制目标</td>
+</tr>
+<tr>
+<td>DISPATCH_INDIRECT_BUFFER</td>
+<td>间接计算着色器分发命令</td>
+</tr>
+<tr>
+<td>DRAW_INDIRECT_BUFFER</td>
+<td>间接绘制命令参数</td>
+</tr>
+<tr>
+<td>ELEMENT_ARRAY_BUFFER</td>
+<td>顶点数组索引</td>
+</tr>
+<tr>
+<td>PIXEL_PACK_BUFFER</td>
+<td>像素读取目标（读回CPU端）</td>
+</tr>
+<tr>
+<td>PIXEL_UNPACK_BUFFER</td>
+<td>纹理数据目标</td>
+</tr>
+<tr>
+<td>QUERY_BUFFER</td>
+<td>查询结果缓存</td>
+</tr>
+<tr>
+<td>SHADER_STORAGE_BUFFER</td>
+<td>着色器的读写存储</td>
+</tr>
+<tr>
+<td>TEXTURE_BUFFER</td>
+<td>纹理数据缓存</td>
+</tr>
+<tr>
+<td>TRANSFORM_FEEDBACK_BUFFER</td>
+<td>变换反馈缓存</td>
+</tr>
+<tr>
+<td>UNIFORM_BUFFER</td>
+<td>着色器的常量块存储</td>
+</tr>
+</tbody>
+</table>
+<h1 id="33缓存对象">3.3缓存对象</h1>
+<p>  <mark>缓存对象是GPU中一块具有任意尺寸，无格式的线性内存区域，它是一个字节数组，可以用来存储顶点数组，从图像或者帧缓存获取的数据，缓存对象在OpenGl中有广泛的用途。</mark></p>
+<h2 id="331缓存对象的存储分配">3.3.1缓存对象的存储分配</h2>
+<p>  在定义一个缓存对象的数据存储之前，必须首先绑定到对应用途的目标，可以用如下命令：</p>
+<pre><code>void glBindBuffer(enum target, uint bufferName);
+</code></pre>
+<p>  缓存对象在上传数据或者被使用之前必须首先为其分配内存，有两种方式：</p>
+<ul>
+<li>可改变存储</li>
+<li>不可变存储</li>
+</ul>
+<h3 id="3311不可变存储">3.3.1.1不可变存储</h3>
+<p>  意思是宿主程序声明该对象的这块内存一旦分配之后就是固定不变的(例如不可修改大小)，但是它的部分或者全部内容是可以改变的，类型C++常量指针。要对缓存对象分配不可变缓存，使用以下接口：</p>
+<pre><code>void glBufferStorage(GLenum target, GLsizeiptr size, const GLvoid *data, GLbitfield flags);
+</code></pre>
+<h3 id="3312可变存储">3.3.1.2可变存储</h3>
+<p>  即是可修改的存储，修改主页包括两方面，一是宿主程序显示的上传二进制数据到GPU（包括相应的GL命令可能修改缓存对象的大小），另一方面是OpenGL渲染管线可能会修改缓存对象的数据。  创建可变的缓存对象数据存储，使用以下接口：</p>
+<pre><code>void glBufferData(enum target, sizeiptr size, const void *data, enum usage);
+</code></pre>
+<h2 id="332缓存对象数据的修改">3.3.2缓存对象数据的修改</h2>
+<p>  上面所说我们知道可以使用glBufferData修改缓存对象数据，然而其原理是对整个缓存对象的存储进行重新分配，当我们想只修改一部分数据，我们可以有用以下接口：</p>
+<pre><code>void glBufferSubData(enum target, intptr offset, sizeiptr size, const void *data);
+</code></pre>
+<p>  虽然这个接口能用来方便地更新缓存对象部分或者全部内容，但是它会导致OpenGL进行一次数据的拷贝操作，这会带来一定的资源浪费。<br>
+  如果能得到一个缓存对象的“指针”，我们就可以直接将算法产生的数据复制给这个指针，而不需要一个专门的临时区域用来存储整个数据对象。我们可以用以下接口实现映射，注意当一个缓存对象被映射后，可以随时接触该缓存对象的绑定，但是除非使用GL_MAP_PERSISTENT_BIT设置创建的可变的缓存对象，否则我们不能调用任何指令导致OpenGL缓存对象进行读写操作。</p>
+<pre><code>void *glMapBufferRange(GLenum target, GLintptr offset, GLsizeiptr length, GLbitfield access);
+</code></pre>
+<p>  使用完映射指针后，必须用以下接口接触映射指针以使缓存对象变得重新可用：</p>
+<pre><code>GLboolean glUnmapBuffer(GLenum target);
+</code></pre>
+<p>  缓存对象的部分或者全部数据清除，通常将其填充为一个特定的值，清除操作使用以下接口,这些接口都不会对缓存对象的存储进行重新分配。</p>
+<pre><code>void glClearBufferData(GLenum target, GLenum internalformat, GLenum format, GLenum type, const void *data);
+void glClearBUfferSubData(GLenum target, GLenum internalformat, GLintptr offset, GLsizeiptr size, GLenum format, GLenum type, const void *data);
+</code></pre>
+<p>  缓存对象的数据也可以从另一个缓存对象复制，首先我们需要绑定复制源和复制目的地缓存对象到对应的目标target，然后使用以下接口进行复制：</p>
+<pre><code>void glCopyBufferSubData(GLenum readtarget, GLenum writetarget, GLintptr readoffset, GLintptr writeoffset, GLsizeiptr size);
+</code></pre>
+<p>  OpenGL提供了一种使缓存对象无效的机制，如果一个缓存对象或者它的部分区域无效，意味着它的数据内容是未定义的。</p>
+<h2 id="333缓存对象的流式更新">3.3.3缓存对象的流式更新</h2>
+<p>  <mark>流式更新的基本机制是一个缓存对象在被OpenGL使用的同时，宿主程序可以向其更新数据，这相当于把一整个数据集拆分成多个子集达到类似完全的流式更新的效果，这个拆分粒度不必太小，只需要不带来CPU和GPU的空闲即可。工作流程如下：首先向缓存对象更新一部分数据，然后调用渲染管线开始使用这部分数据进行渲染：在OpenGL开始执行的同时，宿主程序开始更新另一块数据，以此类推。这种流式更新的机制遵循“更新/使用”模型，如果小心处理完全不需要考虑数据和执行同步的问题，并且更新操作发生在同一个缓存对象上，所有几乎不影响整个渲染的执行。</mark><br>
+  有以下几种方案：</p>
+<ul>
+<li>使用多个缓存对象。OpenGL渲染管线在使用其中一个缓存对象时，宿主程序可以开始修改另一个缓存对象。主要问题是需要使用多个缓存对象，以及因此带来的图形接口调用的复杂性。</li>
+<li>缓存对象数据重定义。在每次修改缓存对象的数据之前重新分配缓存对象的内存，也称为缓存孤立，在OpenGL上称为对象失效。有两种方法实现，一是glBufferData使用NULL作为data参数，这样OpenGL会为缓存对象重新分配一块一样大小的内存，之前的孽畜变得失效，但是它仍然可以被缓存对象在被修改前的命令调用。由于新数据的分配只是一个未定义的NULL，因此不用担心同步问题。二是glMapBufferRange命令并设置GL_INVALIDATE_BUFFER_BIT位，这些都是在修改数据前使其缓存对象数据无效，后续的数据修改都会被分配到新的存储空间。</li>
+<li>缓存更新。调用glMapBufferRange时设置GL_MAP_UNSYNCHRONIZED_BIT，告诉OpenGL完全不需要考虑同步问题，宿主程序会保证不会在任何之前的OpenGL渲染操作还在使用缓存数据之前更新缓存的内容。宿主程序必须保证数据和执行的同步。基本用法是，宿主程序对同一个缓存对象进行渐进式更新，每次更新一小块数据，然后调用OpenGL渲染管线使用这块数据，同时开始更新下移块数据，如此反复，每次更新的数据之间是不重叠的，所以不会有同步问题。</li>
+</ul>
+<h1 id="34着色器和着色器程序">3.4着色器和着色器程序</h1>
+<p>  着色器对象和着色器程序对象是一类特殊的OpenGL对象，他们用来封装这些可执行程序(即着色器)，以及执行这些着色器需要的各种状态配置。一个着色器对象(Shader Object)封装一个特定类型的着色器程序，有GLSL编写，这段程序构成一个字符串。<strong><mark>着色器程序需要经过编译以生成其对应语言的程序片段。</mark></strong><br>
+  <mark>一个着色器程序就像C++中的各个单独的源文件，要想被OpenGL执行，必须将所有的着色器程序链接起来，形成一个可执行文件。</mark> 在OpenGL中这个可执行文件有着色器程序对象(Shader program object)封装。关于着色器相关OpenGL接口如下:</p>
+<pre><code>//着色器对象相关接口
+GLunit glCreateShader(CLenum shaderType);
+void glShaderSource(GLuint shader, GLsizei count, const GLchar **string, const GLint *length);
+void glCompileShader(GLuint shader);
+
+//着色器程序对象相关接口
+GLunit glCreateProgram();
+void glAttachShader(GLuint program, GLuint shader);
+
+void glUseProgram(GLuint program);
+</code></pre>
+<h2 id="341着色器程序的链接">3.4.1着色器程序的链接</h2>
+<p>  可以使用以下接口来链接着色器程序:</p>
+<pre><code>void glLinkProgram(uint program);
+</code></pre>
+<p>  <mark>着色器中使用的变量并不包含在着色器程序对象内部，它们同城被独立地存储在缓存对象或者其他OpenGL对象中，因此着色器程序的链接必须要告诉每个着色器从内存中的那些对象及位置去获取这些数据；另外，不同阶段的着色器之间是可以传递数据的，例如顶点着色器输出的值被插值后作为片元着色器的输入值，这种情况下由于着色器之间并不像C++程序文件那样可以直接饮用(每个着色器是完全独立的)，所以也需要链接阶段来确保这些变量之间的正确传递工作，所有这些配置称为着色器程序对象状态的一部分。</mark><br>
+  着色器中的每个变量名称在链接的时候都被分配一个整形文职，根据每种变量类型的不同，OpenGL内部知道怎样读取这些数据值。如下：</p>
+<ul>
+<li><strong>全局变量</strong> 可以被所有着色器访问的变量</li>
+<li><strong>顺序访问</strong> 缓存对象的数据本身是某种固定格式的数据，如顶点缓存对象保存的某个顶点属性的值，以及帧缓存上的颜色缓存保存的一个像素的颜色值，每个着色器实例通常按照某种顺序访问这类数组数据的一个元素。这种情况只需要为每个变量分配一个位置，当这个位置被绑定到一个缓存对象之后OpenGL就可以根据相应的格式为每个着色器是咧获取到相应数据。</li>
+<li><strong>乱序访问</strong> 对于纹理对象，着色器必须有随机访问的能力。</li>
+</ul>
+<p>  上述这些着色器变量的位置在链接之后就会被自动分配，此外我们还可以在执行链接前手动给这些变量设定固定的位置。在着色器程序链接之后我们就可以查询到这些变量被分配的位置，并且这些位置不能再被修改（除非重新链接），然后宿主程序再将这些变量位置绑定到对应的纹理上。</p>
+<h2 id="342接口块">3.4.2接口块</h2>
+<p>  着色器中的变量按照类型分成一些不同的组，每个组是一个接口块，每种类型可以有多个块，包括：着色器输入变量，着色器输出变量，全局变量，以及存储缓存变量。</p>
+<h3 id="3421基于缓存的接口块">3.4.2.1基于缓存的接口块</h3>
+<p>  着色器内部，高度结构化的数据(如顶点数据)被高效地使用如之前讨论的全局内存合并这样的技术进行访问，对于只在着色器内部分配和使用的变量，它们被存储在寄存器或者本地存储中，<mark>而对于非结构化的可被多个着色器实例共享的数据，在OpenGL中则使用uniform或者buffer类型的接口块来存储和使用</mark>，这样的接口块称为介于缓存的接口块，包括 <strong><mark>uniform和buffer</mark></strong> 两种类型。</p>
+<h2 id="343接口匹配">3.4.3接口匹配</h2>
+<p>  <mark><strong>渲染管线中不同阶段着色器都具有一些输入和输出值，大多数时候前有一个管线阶段输出(out块)的值被后一个相邻阶段的着色器消费(in块)，因此在链接着色器程序的时候，OpenGL还必须做接口匹配，不匹配的输入输出接口将导致链接失败。</strong></mark> 主要包含两个方面的匹配：</p>
+<ul>
+<li>相邻两个阶段的着色器内in/out块之间的匹配</li>
+<li>多个着色器内uniform核buffer块的匹配</li>
+</ul>
+<p>  <mark>首先多个阶段的着色器的链接要求所有前一阶段着色器输出的接口块必须被后以阶段的着色器消费，反之，所有后一阶段着色器中的输入值必须匹配前一阶段着色器的输出值（顶点着色器除外）</mark>。这个匹配工作是必须的，因为存储这些输入输出值的缓存对象是渲染管线的一些中间产物，它并不需要我们手动去维护这些缓存对象(最后阶段输出的颜色缓存除外),这样相邻两个着色器对这些中间缓存对象的使用必须遵循一些规则，才能使OpenGL知道怎样去使用这些缓存对象，例如使用匹配的接口块定义则可以让OpenGL知道每个着色器实例的每个接口块对应于缓存对象的哪一段数据，以及每个接口块内部的每个变量的数据来自缓存对象的哪一段范围。</p>
+<h1 id="35纹理">3.5纹理</h1>
+<p>  纹理对象有别于缓存对象，缓存对象可以用来存储任意格式数据，但是纹理对象是高度格式化的，纹理的格式以颜色为基础，并且具有维度；其次不同于缓存对象存储的是一些离散的精确的值，纹理对象的数据表示的是某个作用域下的某个特征值的分布，如一个2D纹理可以表示一个物体表面颜色的分布，如果我们能够以一个具有少数变量表示的多项式来表征这些同样的分布，那么一个纹理对象完全可以使用这个公式来代替，因此纹理对象的数据存储的是一个函数。<mark>在OpenGL中，纹理是一个包含一个或多个图像的容器对象。</mark> 纹理有三个属性：</p>
+<ul>
+<li>纹理类型 定义纹理内的图像如何排列</li>
+<li>纹理尺寸 定义纹理中每个图像的尺寸</li>
+<li>图像格式 定义每个像素的格式刷，纹理中的像素通常称为纹素</li>
+</ul>
+<p>纹理的类型表:</p>
+<table>
+<thead>
+<tr>
+<th>目标 GL_TEXTURE_*</th>
+<th>采样器类型</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1D</td>
+<td>sampler1D</td>
+<td>所有图像都是1维，具有宽度，没有高度和深度</td>
+</tr>
+<tr>
+<td>2D</td>
+<td>sampler2D</td>
+<td>所有图像都是2维，具有宽度和高度，没有深度</td>
+</tr>
+<tr>
+<td>3D</td>
+<td>sampler3D</td>
+<td>所有图像都是3维，具有宽度，高度和深度</td>
+</tr>
+<tr>
+<td>RECTANCLE</td>
+<td>samplerRect</td>
+<td>只包含一个2维的图像，并且没有mipmap,用于采样的纹理坐标没有被归一化</td>
+</tr>
+<tr>
+<td>BUFFER</td>
+<td>samplerBuffer</td>
+<td>值包含一个1维的图像，没有mipmap，纹理的数据存储在一个缓存对象中</td>
+</tr>
+<tr>
+<td>CUBE_MAP</td>
+<td>samplerCube</td>
+<td>包含6个2维的图像集合，每个图像具有相同的尺寸，表示一个立方体的6个面</td>
+</tr>
+<tr>
+<td>1D_ARRAY</td>
+<td>sampler1DArray</td>
+<td>包含多个1维图像的集合，它的尺寸包括数组的长度</td>
+</tr>
+<tr>
+<td>2D_ARRAY</td>
+<td>sampler2DArray</td>
+<td>包含多个2维图像的集合，它的尺寸包括数组的长度</td>
+</tr>
+<tr>
+<td>CUBE_MAP_ARRAY</td>
+<td>sampler1DCubeArray</td>
+<td>包含多个立方体图像的集合，数组的长度*6是纹理尺寸的一部分</td>
+</tr>
+<tr>
+<td>2D_MULTISAMPLE</td>
+<td>sampler2DMS</td>
+<td>只包含一个2维图像，没有mipmap，但是每个像素包含多个采样点(而不是一个)</td>
+</tr>
+<tr>
+<td>2D_MUTILSAMPLE_ARRAY</td>
+<td>sampler2DMSArray</td>
+<td>包含多个2维多重采样纹理图像的集合</td>
+</tr>
+</tbody>
+</table>
+<h2 id="351纹理的创建">3.5.1纹理的创建</h2>
+<p>  纹理创建接口：</p>
+<pre><code>void glGenTextures(GLsizei n, GLuint *textures);
+</code></pre>
+<p>  当纹理的名称被创建后，它还没有维数和类型，只有第一次绑定到目标后才能决定其类型，初始绑定的目标决定了创建的纹理类型，从这时起，纹理将只会绑定到这个目标上，直到被销毁为止。<br>
+  绑定函数:</p>
+<pre><code>void glBindTexture(GLenum target, GLuint texture);
+</code></pre>
+<p>  在OpenGL着色器中可以使用多个纹理，类似前面讲述的索引目标，OpenGL为每个纹理分配一个整数的索引，称为纹理单元，所以和索引目标一样，每个纹理对象还必须绑定到对应的纹理单元。这必须在glBindTexture之前调用以下命令：</p>
+<pre><code>void glActiveTexture(GLenum texture);
+</code></pre>
+<p>  该命令激活一个纹理单元，然后后续的对纹理的操作都会被关联到这个纹理单元上。在OpenGL着色语言中纹理必须通过一个采样器来对其进行采样，所以着色器使用的纹理单元数量通过采样器变量的数量来决定。<br>
+  一个纹理创建使用过程:</p>
+<pre><code>//着色器中定义有一个采样器
+uniform sampler2D tex1;
+
+//则宿主程序使用方式:
+glUseProgram(prog);
+
+GLint tex1_uniform_loc = glGetUniformLocation(prog, &quot;tex1&quot;);
+glUniform1i(tex1_uniform_loc, 0);
+glActiveTexture(GL_TEXTURE0);
+glBindTexture(GL_TEXTURE_2D, tex1);
+</code></pre>
+<p>  不同于索引目标被OpenGL自动分配，纹理单元需要手动分配，纹理单元的值是OpenGL定义的一系列枚举值，分别命名为GL_TEXTUREi, 其中i在0到k-1范围，k表示纹理单元的最大数目，所以GL_TEXTUREi的值等于GL_TEXTURE0+i。<br>
+  创建一个纹理对象后，必须设置存储和数据。存储和缓存对象一样有可变和不可变之分。不可变还包括纹理的格式和尺寸，可以用以下命令：</p>
+<pre><code>void glTexStorage1D(GLenum target, GLsizei levels, GLenum internalFormat, GLsizei width);
+void glTexStorage2D(GLenum target, GLsizei levels, GLenum internalFormat, GLsizei width, GLsizei height);
+void glTexStorage3D(GLenum target, GLsizei levels, GLenum internalFormat, GLsizei width, GLsizei height, GLsizei depth);
+</code></pre>
+<p>  可变存储用以下接口，<mark>这里列出的纹理内部格式，大小，mipmap级数以及纹理数据都可以被每次调用这些命令的时候改变。</mark></p>
+<pre><code>void glTexImage1D(GLenum target, GLsizei levels, GLenum internalFormat, GLsizei width, GLint border, GLenum format, GLenum type, const void *data);
+void glTexImage2D(GLenum target, GLsizei levels, GLenum internalFormat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const void *data);
+void glTexImage3D(GLenum target, GLsizei levels, GLenum internalFormat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLenum format, GLenum type, const void *data);
+</code></pre>
+<h2 id="352像素传输">3.5.2像素传输</h2>
+<p>  <mark>客户内存的数据通常是未格式化的，称为编码的，所以像素传输由客户内存向设备内存的过程称为像素解码操作，而由设备内存向客户内存传输的过程称为像素编码操作。</mark><br>
+  在OpenGL中，像素数据 有设备内存传输到客户内存（编码）的相关命令：</p>
+<pre><code>//从当前绑定的帧缓存中读取像素数据道客户端内存
+glReadPixels(); 
+//读取当前绑定的某个纹理对象中某个mipmap级别的所有数据道客户端内存
+glGetTexImage();
+</code></pre>
+<p>  像素数据有客户内存传输到设备内存(解码)的命令：</p>
+<pre><code>//为一个额纹理对象的某个mipmap级别分配可改变的存储空间，该命令也可用直接传输输出
+glTexImage*();
+//将客户内存中的纹理数据写入到一个当前绑定的纹理对象的某个mipmap级别
+glTexSubImage*();
+</code></pre>
+<h2 id="353压缩纹理">3.5.3压缩纹理</h2>
+<p>  压缩纹理是指一种基于GPU的纹理压缩方法，有别于传统压缩方案如JPG，该方法GPU可以直接从压缩纹理中采样进行渲染。因此由于纹理在设备内存中以压缩格式存在，所以此方法不仅能减少资源大小，同时能减少内存占用。</p>
+<h3 id="3531压缩纹理的特点">3.5.3.1压缩纹理的特点:</h3>
+<ul>
+<li>解压速度快：为了不影响渲染系统的性能，因此压缩纹理具有快速的解压速度。</li>
+<li>随机读取：传统的 压缩技术如JPEG使用可变的压缩比率，读取某个像素的信息可能要解压很大一部分相关的像素信息。压缩纹理技术则使用固定的压缩比率，访问纹素时可以根据索引快速读取某一小块的内容，从而可以高效地实现随机读取。</li>
+<li>压缩率和图像质量：通常使用有损压缩</li>
+<li>编码速度：一般离线生成，不需关注</li>
+</ul>
+<p>  压缩纹理同时减少了应用程序客户端向GL服务端传输纹理数据的带宽，由于减少内存以及其直接存储在GPU中，因此芯片可以对其进行更高效的使用，<mark>从而可以减少移动设备电量的消耗。</mark></p>
+<h3 id="3532压缩纹理的实现">3.5.3.2压缩纹理的实现</h3>
+<p>  传统的图像压缩算法为了保证最大的压缩比，使用一个可变的压缩比率，这就要求在解压的时候要解压更多的像素位才能读取某个像素的位置，这对于随机和快速读取是做不到的，实际上传统压缩算法为了存储，传输等目的设计，而不是为了实时渲染。<br>
+  <mark>所以压缩纹理使用一个固定的比率，它首先按照这个比率将纹理分成很多的像素块(block)，每个像素块包含如2x2或者4x4个像素，然后对每个像素块进行压缩。每个被压缩后的像素信息存储在一个像素块集合中，而一个块索引图存储了每个 x=像素块 的索引位置，在读取的时候首先根据块索引找到像素块，然后解压该像素块读取偏移值的信息。</mark><br>
+  这种快速解压的速度使得图形渲染管线可以不依赖CPU的解压就可以实现实时渲染，将压缩纹理直接保存在GPU内存中，既减少了资源在磁盘的存储大小，也大大节省了内存，还减少了纹理在传输过程中所占用的带宽。</p>
+<h2 id="354采样器对象">3.5.4采样器对象</h2>
+]]></content>
+    </entry>
     <entry>
         <title type="html"><![CDATA[《全局光照技术》笔记第二章-并行处理器架构]]></title>
         <id>https://zanegjun.github.io/post/lesslessquan-ju-guang-zhao-ji-zhu-greatergreater-bi-ji-di-er-zhang-bing-xing-chu-li-qi-jia-gou</id>
